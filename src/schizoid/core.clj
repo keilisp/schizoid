@@ -9,7 +9,7 @@
 ;; (def *stop-word* 0)
 
 ;; TODO change to set
-(def *endsen*  [\. \! \?])
+(def *endsen*  #{ \. \! \? })
 (def *garbage* #{ \« \< \{ \( \[ \. \! \? \\ \- \— \] \/ \& \^ \# \$ \| \* \  \№ \; \: \) \} \> \» })
 
 
