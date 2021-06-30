@@ -40,3 +40,8 @@
   (let [key (format "trigrams:count:%s" chat-id)]
     (Integer/parseInt (wcar* (car/get key)))))
 
+;; TODO add destructuring for records
+(defn remove-keys
+  [pattern]
+  (let [records (first (rest (wcar* (car/scan 0 :match "trigrams:123:*"))))]
+    (map #(wcar* (car/del %)) records)))
