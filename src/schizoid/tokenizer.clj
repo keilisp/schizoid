@@ -38,7 +38,8 @@
                     ""
                     (last lowercased))
         prettified (str/join (remove *garbage* lowercased))]
-    (if (and (not (empty? prettified)) (>= (count prettified) 2))
+    ;; (if (and (not (empty? prettified)) (>= (count prettified) 2))
+    (if (and (seq prettified) (>= (count prettified) 2))
       (str prettified last-char)
       nil)))
 
