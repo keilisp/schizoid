@@ -59,3 +59,13 @@
     (remove-keys pattern)
     (wcar* (car/del counter-key))))
 
+(defn find-word
+  [chat-id similar-word max-results]
+  (let [format-pattern (format "trigrams:%s:" chat-id)
+        search-pattern (format "trigrams:%s:*%s*" chat-id similar-word)
+        [_ records] (wcar* (car/scan 0 :match search-pattern :count max-results))
+        separator #"\$"]
+    (take 10 (into [] (flatten (map (fn [record]
+                              (let [pair (str/split (str/replace record format-pattern "") separator)]
+                                (filter #(str/starts-with? % similar-word) pair))) records))))))
+
