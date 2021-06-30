@@ -1,6 +1,12 @@
 (ns schizoid.trigram-repo
   (:require [clojure.string :as str])
-  (:require [taoensso.carmine :as car :refer (wcar)]))
+  (:require [taoensso.carmine :as car :refer (wcar)])
+  ;; (:import [java.util.regex Pattern])
+  )
+
+;; TODO:
+;; 1. extracs source and counter patterns to local variables
+;; 2. do something about separtor -> regex
 
 (def server-connection {:pool {}
                         :spec {:host "localhost"
@@ -44,3 +50,12 @@
   [pattern]
   (let [[_ records] (wcar* (car/scan 0 :match pattern))]
     (map #(wcar* (car/del %)) records)))
+
+
+(defn clear
+  [chat-id]
+  (let [pattern (format "trigrams:%s:*" chat-id)
+        counter-key (format "trigrams:count:%s" chat-id)]
+    (remove-keys pattern)
+    (wcar* (car/del counter-key))))
+
