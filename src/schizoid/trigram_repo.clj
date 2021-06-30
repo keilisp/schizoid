@@ -12,13 +12,13 @@
 ;; FIXME refactor this abomination
 (defn store
   [chat-id trigrams]
-  (let [counter-key (format "trigrams:count:%s" chat-id) 
+  (let [counter-key (format "trigrams:count:%s" chat-id)
         new-trigs-count  (count (filter #(= 0 %)
                                         (map (fn [trigram]
                                                (let [key
                                                      (format "trigrams:%s:%s" chat-id (str/join "$" (butlast trigram)))]
                                                  (wcar* (car/exists key)))) trigrams)))]
-    
+
     (wcar* (car/incrby counter-key new-trigs-count))
 
     (map (fn [trigram]
@@ -26,7 +26,6 @@
                  (format "trigrams:%s:%s" chat-id (str/join "$" (butlast trigram)))
                  last-word (last trigram)]
              (wcar* (car/sadd key last-word)))) trigrams)))
-
 
 (defn get-random-reply
   [chat-id key stop-word]
@@ -43,5 +42,5 @@
 ;; TODO add destructuring for records
 (defn remove-keys
   [pattern]
-  (let [records (first (rest (wcar* (car/scan 0 :match "trigrams:123:*"))))]
+  (let [[_ records] (wcar* (car/scan 0 :match pattern))]
     (map #(wcar* (car/del %)) records)))
