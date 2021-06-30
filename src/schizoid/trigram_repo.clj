@@ -26,3 +26,12 @@
                  (format "trigrams:%s:%s" chat-id (str/join "$" (butlast trigram)))
                  last-word (last trigram)]
              (wcar* (car/sadd key last-word)))) trigrams)))
+
+
+(defn get-random-reply
+  [chat-id key stop-word]
+  (let [key  (format "trigrams:%s:%s" chat-id key)
+        reply (wcar* (car/srandmember key))]
+    (when (not= reply stop-word)
+      reply)))
+
