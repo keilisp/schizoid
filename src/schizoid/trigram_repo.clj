@@ -35,3 +35,8 @@
     (when (not= reply stop-word)
       reply)))
 
+(defn count-chat-pairs
+  [chat-id]
+  (let [key (format "trigrams:count:%s" chat-id)]
+    (Integer/parseInt (wcar* (car/get key)))))
+
