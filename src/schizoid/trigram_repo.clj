@@ -69,3 +69,11 @@
                               (let [pair (str/split (str/replace record format-pattern "") separator)]
                                 (filter #(str/starts-with? % similar-word) pair))) records))))))
 
+(defn remove-word
+  [chat-id exact-word]
+  (let [first-key (format "trigrams:%s:%s%s*" chat-id exact-word "$")
+        second-key (format "trigrams:%s:*%s%s" chat-id "$" exact-word)]
+    (remove-keys first-key)
+    (remove-keys second-key)))
+
+
