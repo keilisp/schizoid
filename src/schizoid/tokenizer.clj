@@ -27,7 +27,7 @@
 (defn split-to-trigrams
   [words]
   (let [with-stop-words ((comp stop-word-to-end append-stop-words ) words)]
-    (into [] (for [i (range (- (count with-stop-words) *chain-lein*))]
+    (vec (for [i (range (- (count with-stop-words) *chain-lein*))]
                (let [j (+ i *chain-lein* 1)]
                  (subvec with-stop-words i j))))))
 
@@ -46,7 +46,7 @@
 (defn extract-words
   [message]
   (let [words (str/split message #" ")]
-    (into [] (remove nil? (map #(prettify-word %) words)))))
+    (vec (remove nil? (map #(prettify-word %) words)))))
 
 (defn random-end-sentence-token []
   (rand-nth *endsen*))

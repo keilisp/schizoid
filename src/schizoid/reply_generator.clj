@@ -7,5 +7,5 @@
   [message]
   (let [words (token/extract-words message)
         trigrams (token/split-to-trigrams words)
-        pairs (into [] (map #(into [] (butlast %)) trigrams))]
+        pairs (into [] (map #(vec (butlast %)))  trigrams)]
     pairs))

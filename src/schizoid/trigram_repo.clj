@@ -15,23 +15,34 @@
 
 (defmacro wcar* [& body] `(car/wcar server-connection ~@body))
 
-;; FIXME refactor this abomination
+;; FIXME
 (defn store
   [chat-id trigrams]
+
   (let [counter-key (format "trigrams:count:%s" chat-id)
-        new-trigs-count  (count (filter #(= 0 %)
-                                        (map (fn [trigram]
-                                               (let [key
-                                                     (format "trigrams:%s:%s" chat-id (str/join "$" (butlast trigram)))]
-                                                 (wcar* (car/exists key)))) trigrams)))]
+        get-new-trigs-count (fn [trigrams] (->>  trigrams
+                                                 (map (fn [trigram]
+                                                        (let [pair (str/join "$" (butlast trigram))
+                                                              key (format "trigrams:%s:%s" chat-id pair)]
+                                                          (wcar* (car/exists key)))))
+                                                 (filter zero?)
+                                                 count))
 
-    (wcar* (car/incrby counter-key new-trigs-count))
+        new-trigs-count  (get-new-trigs-count trigrams)
 
-    (map (fn [trigram]
-           (let [key
-                 (format "trigrams:%s:%s" chat-id (str/join "$" (butlast trigram)))
-                 last-word (last trigram)]
-             (wcar* (car/sadd key last-word)))) trigrams)))
+        update-trigs-counter (fn [counter-key new-trigs-count]
+                               (wcar* (car/incrby counter-key new-trigs-count)))
+
+        store-trigrams (fn [trigrams]
+                         (map (fn [trigram]
+                                (let [pair (str/join "$" (butlast trigram))
+                                      key (format "trigrams:%s:%s" chat-id pair)
+                                      last-word (last trigram)]
+                                  (wcar* (car/sadd key last-word)))) trigrams))]
+
+    ;; FIXME
+    (when (store-trigrams trigrams)
+      (update-trigs-counter counter-key new-trigs-count))))
 
 (defn get-random-reply
   [chat-id key stop-word]
@@ -45,12 +56,10 @@
   (let [key (format "trigrams:count:%s" chat-id)]
     (Integer/parseInt (wcar* (car/get key)))))
 
-;; TODO add destructuring for records
 (defn remove-keys
   [pattern]
   (let [[_ records] (wcar* (car/scan 0 :match pattern))]
     (map #(wcar* (car/del %)) records)))
-
 
 (defn clear
   [chat-id]
@@ -65,9 +74,9 @@
         search-pattern (format "trigrams:%s:*%s*" chat-id similar-word)
         [_ records] (wcar* (car/scan 0 :match search-pattern :count max-results))
         separator #"\$"]
-    (take 10 (into [] (flatten (map (fn [record]
-                              (let [pair (str/split (str/replace record format-pattern "") separator)]
-                                (filter #(str/starts-with? % similar-word) pair))) records))))))
+    (take 10 (vec (flatten (map (fn [record]
+                                  (let [pair (str/split (str/replace record format-pattern "") separator)]
+                                    (filter #(str/starts-with? % similar-word) pair))) records))))))
 
 (defn remove-word
   [chat-id exact-word]
