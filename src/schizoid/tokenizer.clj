@@ -49,6 +49,6 @@
     (vec (remove nil? (map #(prettify-word %) words)))))
 
 (defn random-end-sentence-token []
-  (rand-nth *endsen*))
+  (rand-nth (vec *endsen*)))
 
 
