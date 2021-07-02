@@ -2,6 +2,7 @@
   (:require [schizoid.tokenizer :as token])
   (:require [schizoid.trigram-repo :as trig])
   (:require [schizoid.reply-generator :as reply])
+  (:require [schizoid.data-learner :as dlearner])
   (:require [clojure.string :as str])
   ;; (:gen-class)
   )
