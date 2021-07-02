@@ -10,17 +10,6 @@
 (def *max-messages* 10)
 
 ;; FIXME need to extract chat id from message
-(defn generate
-  [message]
-  (let [words (token/extract-words message)
-        trigrams (token/split-to-trigrams words)
-        pairs (into [] (map #(vec (butlast %)))  trigrams)
-        messages (into [] (map #(generate-best-sentence "123" %)) pairs)
-        longest-message (last (sort-by count messages))
-        longest-message (if (and longest-message (identical? longest-message (str/join "" words)))
-                          nil
-                          longest-message)]
-    longest-message))
 
 (defn generate-sentence
   [chat-id pair]
@@ -56,4 +45,14 @@
                           best-message))))]
     (str/capitalize sentence)))
 
-
+(defn generate
+  [message]
+  (let [words (token/extract-words message)
+        trigrams (token/split-to-trigrams words)
+        pairs (into [] (map #(vec (butlast %)))  trigrams)
+        messages (into [] (map #(generate-best-sentence "123" %)) pairs)
+        longest-message (last (sort-by count messages))
+        longest-message (if (and longest-message (identical? longest-message (str/join "" words)))
+                          nil
+                          longest-message)]
+    longest-message))
