@@ -18,7 +18,6 @@
 ;; FIXME
 (defn store
   [chat-id trigrams]
-
   (let [counter-key (format "trigrams:count:%s" chat-id)
         get-new-trigs-count (fn [trigrams] (->>  trigrams
                                                  (map (fn [trigram]
@@ -41,8 +40,8 @@
                                   (wcar* (car/sadd key last-word)))) trigrams))]
 
     ;; FIXME
-    (when (store-trigrams trigrams)
-      (update-trigs-counter counter-key new-trigs-count))))
+    (update-trigs-counter counter-key new-trigs-count)
+    (store-trigrams trigrams)))
 
 (defn get-random-reply
   [chat-id key stop-word]
