@@ -1,8 +1,6 @@
 (ns schizoid.trigram-repo
-  (:require [clojure.string :as str])
-  (:require [taoensso.carmine :as car :refer (wcar)])
-  ;; (:import [java.util.regex Pattern])
-  )
+  (:require [clojure.string :as str]
+            [taoensso.carmine :as car :refer (wcar)]))
 
 ;; TODO:
 ;; 1. extracs source and counter patterns to local variables

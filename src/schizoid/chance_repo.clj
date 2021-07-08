@@ -1,7 +1,7 @@
 (ns schizoid.chance-repo
-  (:require [schizoid.trigram-repo :as trig])
-  (:require [schizoid.tokenizer :as token])
-  (:require [taoensso.carmine :as car :refer (wcar)]))
+  (:require [schizoid.trigram-repo :as trig]
+            [schizoid.tokenizer :as token]
+            [taoensso.carmine :as car :refer (wcar)]))
 
 
 (def server-connection {:pool {}
