@@ -1,13 +1,13 @@
 (ns schizoid.reply-generator
-  (:require [schizoid.tokenizer :as token])
-  (:require [clojure.string :as str])
-  (:require [schizoid.trigram-repo :as trig]))
+  (:require [schizoid.tokenizer :as token]
+            [clojure.string :as str]
+            [schizoid.trigram-repo :as trig]))
 
 ;; TODO FIXME HACK
 
-(def *stop-word* 0)
-(def *endsen*  #{\. \! \?})
-(def *max-messages* 10)
+(def stop-word 0)
+(def endsen  #{\. \! \?})
+(def max-messages 10)
 
 ;; FIXME need to extract chat id from message
 
@@ -27,9 +27,9 @@
     (let [words (set (if (not (contains? (init-words :words) last-word))
                        (conj (:words init-words) last-word)
                        (:words init-words)))
-          filtered-words (vec (remove #{*stop-word*} words))
+          filtered-words (vec (remove #{stop-word} words))
           sentence (str/trim (str/join " " words))
-          sentence (if (not (some #{(last sentence)} *endsen*))
+          sentence (if (not (some #{(last sentence)} endsen))
                      (str sentence (token/random-end-sentence-token))
                      sentence)]
       sentence)))
@@ -38,7 +38,7 @@
   [chat-id pair]
   (let [sentence  (loop [i 0
                          best-message ""]
-                    (when (< i *max-messages*)
+                    (when (< i max-messages)
                       (let [generated (generate-sentence chat-id pair)]
                         (if (> (count generated) (count best-message))
                           (recur (inc i) generated)
@@ -47,7 +47,8 @@
 
 (defn generate
   [message]
-  (let [words (token/extract-words message)
+  (let [message-text (:content message)
+        words (token/extract-words message-text)
         trigrams (token/split-to-trigrams words)
         pairs (into [] (map #(vec (butlast %)))  trigrams)
         messages (into [] (map #(generate-best-sentence "123" %)) pairs)
