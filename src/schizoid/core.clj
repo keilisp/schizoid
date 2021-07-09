@@ -16,26 +16,32 @@
 (def bot-token (-> "secrets.edn" slurp edn/read-string :bot-token))
 
 (def state (atom nil))
+(def mode (atom {:mode 'polling}))
 
 #_(defn handle-message
-  [event-type event-data]
-  (if (= (:content event-data) "!disconnect")
-    (async/put! (:connection @state) [:disconnect])
-    (when-not (:bot event-data)
-      (let [should-answer? (message/should-answer? event-data)
-            channel-id (:channel-id event-data)]
-        (when should-answer? (msgs/trigger-typing-indicator! (:messaging @state) channel-id))
-        (dlearner/learn event-data)
-        (when should-answer?
-          (when-let [reply-text (reply/generate event-data)]
-            (msgs/create-message! (:messaging @state) channel-id :content reply-text)))))))
+    [event-type event-data]
+    (if (= (:content event-data) "!disconnect")
+      (async/put! (:connection @state) [:disconnect])
+      (when-not (:bot event-data)
+        (let [should-answer? (message/should-answer? event-data)
+              channel-id (:channel-id event-data)]
+          (when should-answer? (msgs/trigger-typing-indicator! (:messaging @state) channel-id))
+          (dlearner/learn event-data)
+          (when should-answer?
+            (when-let [reply-text (reply/generate event-data)]
+              (msgs/create-message! (:messaging @state) channel-id :content reply-text)))))))
 
 (defn learn-message
   "Handler just to learn on user's messages."
   [event-type event-data]
-  (when-not (:bot event-data)
-    (let [channel-id (:channel-id event-data)]
-      (dlearner/learn event-data))))
+  (when (= (:content event-data) "!stop-polling")
+    (swap! mode assoc :mode 'chilling))
+  (when (= (:content event-data) "!start-polling")
+    (swap! mode assoc :mode 'polling))
+  (when (= (:mode @mode) 'polling)
+    (when-not (:bot event-data)
+      (let [channel-id (:channel-id event-data)]
+        (dlearner/learn event-data)))))
 
 (def handlers
   {:message-create [#'learn-message]})
