@@ -1,8 +1,8 @@
 (ns schizoid.chance-repo
   (:require [schizoid.trigram-repo :as trig]
             [schizoid.tokenizer :as token]
+            [clojure.edn :as edn]
             [taoensso.carmine :as car :refer (wcar)]))
-
 
 (def server-connection {:pool {}
                         :spec {:host "localhost"
@@ -10,7 +10,7 @@
                                :timeout 4000}})
 (defmacro wcar* [& body] `(car/wcar server-connection ~@body))
 
-(def default-chance 5)
+(def default-chance (-> "config.edn" slurp edn/read-string :bot :default-chance))
 
 ;; Execution error (NumberFormatException) at java.lang.Integer/parseInt (Integer.java:614).
 

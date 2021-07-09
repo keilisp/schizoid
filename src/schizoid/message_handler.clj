@@ -12,7 +12,7 @@
     (dlearner/learn message)
     (when should-answer?
       (when-let [reply-text (reply/generate message)]
-          (mess/create-message! conn chat-id :content reply-text)))))
+        (mess/create-message! conn chat-id :content reply-text)))))
 
 (defn process-sticker
   [conn chat-id message]
@@ -22,7 +22,7 @@
 
 (defn handle
   [conn message]
-  (let [chat-id (:guild-id message) 
+  (let [chat-id (:channel-id message)
         chance (chance/get-chance chat-id)]
     (if (and (message/has-text? message)
              (message/was-edited? message))

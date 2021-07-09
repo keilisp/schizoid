@@ -1,0 +1,18 @@
+{:bot {:token ""
+       :anchors #{"schizoid" "shizoid" "schiz" "shiz" "шиз" "шизоид" "шизик" "шизофреник"}
+       :purge-interval 43200.0
+       :default-chance 5}
+
+ :grammar {:chain-len 2
+           :separator \$
+           :stop-word (byte 0x00)
+           :max-words 30
+           :max-messages 5
+           :endsen #{\. \! \?}
+           :garbage #{\« \< \{ \( \[ \. \! \? \\ \- \— \] \/ \& \^ \# \$ \| \* \  \№ \; \: \) \} \> \»}}
+
+ :redis {:pool {}
+         :spec {:host "localhost"
+                :port 6379
+                :timeout 4000}}}
+

@@ -1,16 +1,15 @@
 (ns schizoid.reply-generator
   (:require [schizoid.tokenizer :as token]
             [clojure.string :as str]
-            [schizoid.trigram-repo :as trig]))
+            [schizoid.trigram-repo :as trig]
+            [clojure.edn :as edn]))
 
-;; TODO FIXME HACK
 
-(def stop-word 0)
-(def endsen  #{\. \! \?})
-(def max-messages 10)
+(def stop-word (-> "config.edn" slurp edn/read-string :grammar :stop-word))
+(def endsen (-> "config.edn" slurp edn/read-string :grammar :endsen))
+(def max-messages (-> "config.edn" slurp edn/read-string :grammar :max-messages))
 
-;; FIXME need to extract chat id from message
-
+;; TODO FIXME HACK looks like an abomination to me
 (defn generate-sentence
   [chat-id pair]
   (let [init-words (loop [i 0
@@ -23,6 +22,7 @@
                                 (str/join "$" (conj [] (nth words 1) next-word))
                                 (assoc gen-words :words (conj (:words gen-words) (nth words 1)) :key key))
                          (assoc gen-words :key key))))
+
         last-word (last (str/split (:key init-words) #"\$"))]
     (let [words (set (if (not (contains? (init-words :words) last-word))
                        (conj (:words init-words) last-word)
@@ -47,11 +47,12 @@
 
 (defn generate
   [message]
-  (let [message-text (:content message)
+  (let [chat-id (:channel-id message)
+        message-text (:content message)
         words (token/extract-words message-text)
         trigrams (token/split-to-trigrams words)
         pairs (into [] (map #(vec (butlast %)))  trigrams)
-        messages (into [] (map #(generate-best-sentence "123" %)) pairs)
+        messages (into [] (map #(generate-best-sentence chat-id %)) pairs)
         longest-message (last (sort-by count messages))
         longest-message (if (and longest-message (identical? longest-message (str/join "" words)))
                           nil

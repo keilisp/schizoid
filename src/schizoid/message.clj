@@ -1,8 +1,10 @@
 (ns schizoid.message
   (:require [clojure.string :as str]
+            [clojure.edn :as edn]
             [schizoid.chance-repo :as chance]))
 
-(def anchors #{"schizoid" "shizoid" "schiz" "shiz" "шиз" "шизоид" "шизик" "шизофреник"})
+(def anchors (-> "config.edn" slurp edn/read-string :bot :anchors))
+
 
 ;;;; Message objects
 
@@ -67,6 +69,9 @@
 ;;  :tts false,
 ;;  :edited-timestamp nil
 
+;;;; TODO FIXME pass necessary args from event-data directly 
+
+
 (defn has-text?
   [message]
   (let [text (:content message)]
@@ -109,7 +114,7 @@
 ;; FIXME
 (defn is-random-answer?
   [message]
-  (< (rand-int) 100) (chance/get-chance (:guild-id message)))
+  (< (rand-int 100) (chance/get-chance (:channel-id message))))
 
 (defn should-answer?
   [message]
