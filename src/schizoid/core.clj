@@ -15,41 +15,45 @@
 
 (def bot-token (-> "secrets.edn" slurp edn/read-string :bot-token))
 
-
 (def state (atom nil))
 
-(defn greet-or-disconnect
-  [event-type {{bot :bot} :author :keys [channel-id content]}]
-  (if (= content "!disconnect")
+#_(defn handle-message
+  [event-type event-data]
+  (if (= (:content event-data) "!disconnect")
     (async/put! (:connection @state) [:disconnect])
-    (when-not bot
-      (mess/create-message! (:messaging @state) channel-id :content "Hello, World!"))))
+    (when-not (:bot event-data)
+      (let [should-answer? (message/should-answer? event-data)
+            chat-id (:channel-id event-data)]
+        (when should-answer? (mess/trigger-typing-indicator! (:messaging @state) chat-id))
+        (dlearner/learn event-data)
+        (when should-answer?
+          (when-let [reply-text (reply/generate event-data)]
+            (mess/create-message! (:messaging @state) chat-id :content reply-text)))))))
 
-(defn send-emoji
-  [event-type {:keys [channel-id emoji]}]
-  (when (:name emoji)
-    (mess/create-message! (:messaging @state) channel-id
-                          :content (if (:id emoji)
-                                     (str "<:" (:name emoji) ":" (:id emoji) ">")
-                                     (:name emoji)))))
+(defn learn-message
+  [event-type event-data]
+  (when-not (:bot event-data)
+    (let [chat-id (:channel-id event-data)]
+      (dlearner/learn event-data))))
 
 (def handlers
-  {:message-create [#'greet-or-disconnect]
-   :message-reaction-add [#'send-emoji]})
+  {:message-create [#'learn-message]})
 
-(let [event-ch (async/chan 100)
-      connection-ch (conns/connect-bot! bot-token event-ch :intents #{:guilds :guild-members :guild-bans :guild-emojis
-                                                                      :guild-integrations :guild-webhooks :guild-invites
-                                                                      :guild-voice-states :guild-presences :guild-messages
-                                                                      :guild-message-reactions :guild-message-typing
-                                                                      :direct-messages :direct-message-reactions
-                                                                      :direct-message-typing})
-      messaging-ch (mess/start-connection! bot-token)
-      init-state {:connection connection-ch
-                  :event event-ch
-                  :messaging messaging-ch}]
-  (reset! state init-state)
-  (try (events/message-pump! event-ch (partial events/dispatch-handlers #'handlers))
-       (finally
-         (mess/stop-connection! messaging-ch)
-         (conns/disconnect-bot! connection-ch))))
+(defn -main
+  [& args]
+  (let [event-ch (async/chan 100)
+        connection-ch (conns/connect-bot! bot-token event-ch :intents #{:guilds :guild-members :guild-bans :guild-emojis
+                                                                        :guild-integrations :guild-webhooks :guild-invites
+                                                                        :guild-voice-states :guild-presences :guild-messages
+                                                                        :guild-message-reactions :guild-message-typing
+                                                                        :direct-messages :direct-message-reactions
+                                                                        :direct-message-typing})
+        messaging-ch (mess/start-connection! bot-token)
+        init-state {:connection connection-ch
+                    :event event-ch
+                    :messaging messaging-ch}]
+    (reset! state init-state)
+    (try (events/message-pump! event-ch (partial events/dispatch-handlers #'handlers))
+         (finally
+           (mess/stop-connection! messaging-ch)
+           (conns/disconnect-bot! connection-ch)))))
