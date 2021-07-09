@@ -2,11 +2,12 @@
   (:require [schizoid.trigram-repo :as trig]
             [schizoid.tokenizer :as token]))
 
-;; TODO maybe pass chat-id and content directly
+;; TODO maybe pass channel-id and content directly
 (defn learn
+  "Split `message` text to trigrams and store them."
   [message]
-  (let [chat-id (:channel-id message)
+  (let [channel-id (:channel-id message)
         message-text (:content message)
         words (token/extract-words message-text)
         trigrams (token/split-to-trigrams words)]
-    (trig/store chat-id trigrams)))
+    (trig/store channel-id trigrams)))

@@ -73,28 +73,34 @@
 
 
 (defn has-text?
+  "Check if message is not empty."
   [message]
   (let [text (:content message)]
     (and (some? text) (not (str/blank? text)))))
 
 (defn is-sticker?
+  "Сheck if message is sticker. TODO: implement stickers interaction."
   [message]
   (let [stickers (:sticker_itmes message)]
     (and (some? stickers) (not (empty? stickers)))))
 
 (defn was-edited?
+  "Check if message was edited."
   [message]
   (some? (:edited-timestamp message)))
 
 (defn has-mentions?
+  "Check if message mentions other users or bots."
   [message]
   (not (empty? (:mentions message))))
 
 (defn has-attachments?
+  "Check if message has attachments (photos, vides, etc..)"
   [message]
   (not (empty? (:attachments message))))
 
 (defn has-anchors?
+  "Check if message mentions Bot."
   [message]
   (let [text (:content message)
         words-vec (str/split (str/trim text) #" ")
@@ -106,6 +112,7 @@
 
 ;; TEST
 (defn is-reply-to-bot?
+  "Check if message has reference to Bot's message."
   [message]
   (let [referenced-message (:referenced-message message)]
     (and (some? referenced-message)
@@ -113,10 +120,12 @@
 
 ;; FIXME
 (defn is-random-answer?
+  "Check if replay chance for this channel is high enough."
   [message]
   (< (rand-int 100) (chance/get-chance (:channel-id message))))
 
 (defn should-answer?
+  "Check if bot should answer to this message."
   [message]
   (or (has-anchors? message)
       (is-reply-to-bot? message)

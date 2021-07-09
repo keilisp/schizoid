@@ -9,7 +9,7 @@
             [clojure.edn :as edn]
             [clojure.core.async    :as async]
             [discljord.connections :as conns]
-            [discljord.messaging   :as mess]
+            [discljord.messaging   :as msgs]
             [discljord.events :as events])
   (:gen-class))
 
@@ -23,23 +23,25 @@
     (async/put! (:connection @state) [:disconnect])
     (when-not (:bot event-data)
       (let [should-answer? (message/should-answer? event-data)
-            chat-id (:channel-id event-data)]
-        (when should-answer? (mess/trigger-typing-indicator! (:messaging @state) chat-id))
+            channel-id (:channel-id event-data)]
+        (when should-answer? (msgs/trigger-typing-indicator! (:messaging @state) channel-id))
         (dlearner/learn event-data)
         (when should-answer?
           (when-let [reply-text (reply/generate event-data)]
-            (mess/create-message! (:messaging @state) chat-id :content reply-text)))))))
+            (msgs/create-message! (:messaging @state) channel-id :content reply-text)))))))
 
 (defn learn-message
+  "Handler just to learn on user's messages."
   [event-type event-data]
   (when-not (:bot event-data)
-    (let [chat-id (:channel-id event-data)]
+    (let [channel-id (:channel-id event-data)]
       (dlearner/learn event-data))))
 
 (def handlers
   {:message-create [#'learn-message]})
 
 (defn -main
+  "Main loop for Bot."
   [& args]
   (let [event-ch (async/chan 100)
         connection-ch (conns/connect-bot! bot-token event-ch :intents #{:guilds :guild-members :guild-bans :guild-emojis
@@ -48,12 +50,12 @@
                                                                         :guild-message-reactions :guild-message-typing
                                                                         :direct-messages :direct-message-reactions
                                                                         :direct-message-typing})
-        messaging-ch (mess/start-connection! bot-token)
+        messaging-ch (msgs/start-connection! bot-token)
         init-state {:connection connection-ch
                     :event event-ch
                     :messaging messaging-ch}]
     (reset! state init-state)
     (try (events/message-pump! event-ch (partial events/dispatch-handlers #'handlers))
          (finally
-           (mess/stop-connection! messaging-ch)
+           (msgs/stop-connection! messaging-ch)
            (conns/disconnect-bot! connection-ch)))))
