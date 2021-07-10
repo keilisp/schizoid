@@ -10,7 +10,8 @@
             [clojure.core.async    :as async]
             [discljord.connections :as conns]
             [discljord.messaging   :as msgs]
-            [discljord.events :as events])
+            [discljord.events :as events]
+            [clojure.tools.logging :as log])
   (:gen-class))
 
 (def bot-token (-> "secrets.edn" slurp edn/read-string :bot-token))
@@ -34,6 +35,7 @@
 (defn learn-message
   "Handler just to learn on user's messages."
   [event-type event-data]
+  (log/info (format "[Chat %s] message length %s" (:channel-id event-data) (count (:content event-data))))
   (when (= (:content event-data) "!stop-polling")
     (swap! mode assoc :mode 'chilling))
   (when (= (:content event-data) "!start-polling")
@@ -60,6 +62,7 @@
         init-state {:connection connection-ch
                     :event event-ch
                     :messaging messaging-ch}]
+    (log/info "Bot started!")
     (reset! state init-state)
     (try (events/message-pump! event-ch (partial events/dispatch-handlers #'handlers))
          (finally

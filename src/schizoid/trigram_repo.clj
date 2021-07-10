@@ -1,6 +1,7 @@
 (ns schizoid.trigram-repo
   (:require [clojure.string :as str]
             [clojure.edn :as edn]
+            [clojure.tools.logging :as log]
             [taoensso.carmine :as car :refer (wcar)]))
 
 ;; TODO:
@@ -27,6 +28,7 @@
                                        (wcar* (car/exists key)))))
                               (filter zero?)
                               count)]
+    (log/info (format "%s new trigrams for %s" new-trigs-count channel-id))
     (wcar* (car/incrby counter-key new-trigs-count))))
 
 (defn store-trigrams

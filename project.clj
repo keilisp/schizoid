@@ -6,7 +6,9 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [com.taoensso/carmine "3.1.0"]
                  [org.suskalo/discljord "1.2.3"]
-                 [org.clojure/core.async "1.3.618"]]
+                 [org.clojure/core.async "1.3.618"]
+                 [org.clojure/tools.logging "1.1.0"]
+                 [ch.qos.logback/logback-classic "1.2.3"]]
   :main ^:skip-aot schizoid.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all

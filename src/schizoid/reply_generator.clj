@@ -2,6 +2,7 @@
   (:require [schizoid.tokenizer :as token]
             [clojure.string :as str]
             [schizoid.trigram-repo :as trig]
+            [clojure.tools.logging :as log]
             [clojure.edn :as edn]))
 
 (def stop-word (-> "config.edn" slurp edn/read-string :grammar :stop-word))
@@ -75,4 +76,6 @@
         longest-message (if (and longest-message (identical? longest-message (str/join "" words)))
                           nil
                           longest-message)]
+    (log/info (format "[Channel %s] for \"%s\" generated %s with best \"%s\""
+                      channel-id message-text messages longest-message))
     longest-message))

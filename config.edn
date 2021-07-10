@@ -5,7 +5,7 @@
 
  :grammar {:chain-len 2
            :separator \$
-           :stop-word (byte 0x00)
+           :stop-word "0"
            :max-words 30
            :max-messages 5
            :endsen #{\. \! \?}
