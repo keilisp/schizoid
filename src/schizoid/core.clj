@@ -22,7 +22,7 @@
     [event-type event-data]
     (if (= (:content event-data) "!disconnect")
       (async/put! (:connection @state) [:disconnect])
-      (when-not (:bot event-data)
+      (when-not (:author (:bot event-data))
         (let [should-answer? (message/should-answer? event-data)
               channel-id (:channel-id event-data)]
           (when should-answer? (msgs/trigger-typing-indicator! (:messaging @state) channel-id))

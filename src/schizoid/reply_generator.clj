@@ -44,7 +44,7 @@
                        (conj (:words init-words) last-word)
                        (:words init-words)))
           filtered-words (vec (remove #{stop-word} words))
-          sentence (str/trim (str/join " " words))
+          sentence (str/trim (str/join " " filtered-words))
           sentence (if (not (some #{(last sentence)} endsen))
                      (str sentence (token/random-end-sentence-token))
                      sentence)]

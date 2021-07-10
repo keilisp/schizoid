@@ -36,13 +36,13 @@
     (let [pair (str/join "$" (butlast trigram))
           key (format "trigrams:%s:%s" channel-id pair)
           last-word (last trigram)]
+      (log/info (format "Stored %s for %s" trigrams channel-id))
       (wcar* (car/sadd key last-word)))))
 
 (defn store
   "Update counter for `channel-id` and store new `trigrams`."
   [channel-id trigrams]
-  (update-trigs-counter channel-id trigrams)
-  (store-trigrams channel-id trigrams))
+  ((juxt update-trigs-counter store-trigrams) channel-id trigrams))
 
 (defn get-random-reply
   "Get random reply for `key` in `channel-id` from database."
