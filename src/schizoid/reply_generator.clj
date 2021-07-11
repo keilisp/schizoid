@@ -9,7 +9,7 @@
 (def endsen (-> "config.edn" slurp edn/read-string :grammar :endsen))
 (def max-messages (-> "config.edn" slurp edn/read-string :grammar :max-messages))
 
-;; TODO FIXME HACK looks like an abomination to me
+;; TODO FIXME HACK looks like an abomination to me (maybe use transients for `gen-words`)
 (defn generate-sentence
   "Generate sentence from given `pair`.
     For example, we recieve pair (hello, bot). We will convert it to the string 'hello$bot' and write it to the key.
