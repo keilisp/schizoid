@@ -37,22 +37,22 @@
             (when-let [reply-text (reply/generate event-data)]
               (msgs/create-message! (:messaging @state) channel-id :content reply-text)))))))
 
+;; REVIEW version with async/go block
 (defn has-permissions? [user-id channel-id permissions]
-  (async/go
-    (let [{:keys [guild-id] :as channel} (async/<! (msgs/get-channel! (:messaging @state) channel-id))
-          member (async/<! (msgs/get-guild-member! (:messaging @state) guild-id user-id))
-          guild (-> (async/<! (msgs/get-guild! (:messaging @state) guild-id))
-                    (assoc :channels [(update channel :permission-overwrites
-                                              (fn [overrides]
-                                                (mapv #(-> % (update :allow parse-if-str)
-                                                           (update :deny parse-if-str))
-                                                      overrides)))])
-                    (assoc :members [member])
-                    (update :roles (fn [roles] (mapv #(update % :permissions parse-if-str) roles)))
-                    (prepare-guild))]
-      (perm/has-permissions?
-       permissions
-       guild user-id channel-id))))
+  (let [{:keys [guild-id] :as channel} (async/<!! (msgs/get-channel! (:messaging @state) channel-id))
+        member (async/<!! (msgs/get-guild-member! (:messaging @state) guild-id user-id))
+        guild (-> (async/<!! (msgs/get-guild! (:messaging @state) guild-id))
+                  (assoc :channels [(update channel :permission-overwrites
+                                            (fn [overrides]
+                                              (mapv #(-> % (update :allow parse-if-str)
+                                                         (update :deny parse-if-str))
+                                                    overrides)))])
+                  (assoc :members [member])
+                  (update :roles (fn [roles] (mapv #(update % :permissions parse-if-str) roles)))
+                  (prepare-guild))]
+    (perm/has-permissions?
+     permissions
+     guild user-id channel-id)))
 
 ;; FIXME TODO fork discljord and implement slash commands (https://discord.com/developers/docs/interactions/slash-commands#authorizing-your-application)
 (defn process-command
@@ -62,27 +62,27 @@
                     (str/split #"\s"))
         [command & args] words
         guild (msgs/get-guild! (:messaging @state) guild-id)]
-    (async/go (if (async/<! (has-permissions? (:id author) channel-id #{:administrator}))
-                (case command
-                  "!stop-polling" (swap! mode assoc :mode 'chilling)
-                  "!start-polling" (swap! mode assoc :mode 'polling)
-                  "!mod_f" (if (not-empty args)
-                             (let [finded (set (flatten (map #(->> %
-                                                                   str/trim
-                                                                   (trig/find-word channel-id)) args)))
-                                   reply (str/join "\n" finded)]
-                               (println (str "finded: " finded))
-                               (println (str "reply: " reply))
-                               (if (str/blank? (str/trim reply))
-                                 (msgs/create-message! (:messaging @state) channel-id :content "Nothing found!")
-                                 (msgs/create-message! (:messaging @state) channel-id :content reply)))
-                             (msgs/create-message! (:messaging @state) channel-id :content (format "%s You haven't supplied any words to find!" (fmt/mention-user author))))
-                  "!mod_d" (if (not-empty args)
-                             (doall (map #(->> %
-                                               str/trim
-                                               (trig/remove-word channel-id)) args))
-                             (msgs/create-message! (:messaging @state) channel-id :content (format "%s You haven't supplied any words for deletion!" (fmt/mention-user author)))))
-                (msgs/create-message! (:messaging @state) channel-id :content (format "%s You're not an administrator!" (fmt/mention-user author)))))))
+    (if (has-permissions? (:id author) channel-id #{:administrator})
+      (case command
+        "!stop-polling" (swap! mode assoc :mode 'chilling)
+        "!start-polling" (swap! mode assoc :mode 'polling)
+        "!mod_f" (if (not-empty args)
+                   (let [finded (set (flatten (map #(->> %
+                                                         str/trim
+                                                         (trig/find-word channel-id)) args)))
+                         reply (str/join "\n" finded)]
+                     (println (str "finded: " finded))
+                     (println (str "reply: " reply))
+                     (if (str/blank? (str/trim reply))
+                       (msgs/create-message! (:messaging @state) channel-id :content "Nothing found!")
+                       (msgs/create-message! (:messaging @state) channel-id :content reply)))
+                   (msgs/create-message! (:messaging @state) channel-id :content (format "%s You haven't supplied any words to find!" (fmt/mention-user author))))
+        "!mod_d" (if (not-empty args)
+                   (doall (map #(->> %
+                                     str/trim
+                                     (trig/remove-word channel-id)) args))
+                   (msgs/create-message! (:messaging @state) channel-id :content (format "%s You haven't supplied any words for deletion!" (fmt/mention-user author)))))
+      (msgs/create-message! (:messaging @state) channel-id :content (format "%s You're not an administrator!" (fmt/mention-user author))))))
 
 (defn learn-message
   "Handler just to learn on user's messages."
