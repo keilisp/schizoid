@@ -6,12 +6,14 @@
 
 ;; TODO:
 ;; 1. extracs source and counter patterns to local variables
+;; FIXME idk what to do with redis scan counter
 
 (def config (-> "config.edn" slurp edn/read-string))
 
 (def server-connection (-> config :redis))
-(def separator (-> config :grammar separator))
+(def separator (-> config :grammar :separator))
 (def re-separator (re-pattern (str "\\" separator)))
+(def max-results (-> config :grammar :max-words))
 
 (defmacro wcar* [& body] `(car/wcar server-connection ~@body))
 
@@ -61,8 +63,8 @@
 (defn remove-keys
   "Remove all keys matching given `pattern`."
   [pattern]
-  (let [[_ records] (wcar* (car/scan 0 :match pattern))]
-    (map #(wcar* (car/del %)) records)))
+  (let [[_ records] (wcar* (car/scan 0 :match pattern :count 1000))]
+    (doall (map #(wcar* (car/del %)) records))))
 
 (defn clear
   "Remove all trigrams from channel with `channel-id` from database."
@@ -72,13 +74,12 @@
     (remove-keys pattern)
     (wcar* (car/del counter-key))))
 
-;; FIXME max-results?
 (defn find-word
   "Search for words similar to given `similar-word` for `channel-id`."
-  [channel-id similar-word max-results]
+  [channel-id similar-word]
   (let [format-pattern (format "trigrams:%s:" channel-id)
         search-pattern (format "trigrams:%s:*%s*" channel-id similar-word)
-        [_ records] (wcar* (car/scan 0 :match search-pattern :count max-results))]
+        [_ records] (wcar* (car/scan 0 :match search-pattern :count 1000))]
     (take 10 (vec (flatten (map (fn [record]
                                   (let [pair (str/split (str/replace record format-pattern "")
                                                         re-separator)]
