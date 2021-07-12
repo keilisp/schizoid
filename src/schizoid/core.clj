@@ -1,17 +1,21 @@
 (ns schizoid.core
-  (:require [schizoid.tokenizer :as token]
+  (:require [schizoid.tokenizer       :as token]
             [schizoid.reply-generator :as reply]
-            [schizoid.data-learner :as dlearner]
-            [schizoid.chance-repo :as chance]
-            [schizoid.trigram-repo :as trig]
-            [schizoid.message :as message]
-            [clojure.string :as str]
-            [clojure.edn :as edn]
-            [clojure.core.async    :as async]
-            [discljord.connections :as conns]
-            [discljord.messaging   :as msgs]
-            [discljord.events :as events]
-            [clojure.tools.logging :as log])
+            [schizoid.data-learner    :as dlearner]
+            [schizoid.chance-repo     :as chance]
+            [schizoid.trigram-repo    :as trig]
+            [schizoid.message         :as message]
+            [clojure.string           :as str]
+            [clojure.edn              :as edn]
+            [clojure.core.async       :as async]
+            [discljord.connections    :as conns]
+            [discljord.messaging      :as msgs]
+            [discljord.permissions    :as perm]
+            [discljord.formatting     :as fmt]
+            [discljord.events         :as events]
+            [clojure.tools.logging    :as log]
+            [discljord.events.state :refer [prepare-guild]]
+            [discljord.util :refer [parse-if-str]])
   (:gen-class))
 
 (def bot-token (-> "secrets.edn" slurp edn/read-string :bot-token))
@@ -21,6 +25,7 @@
 
 #_(defn handle-message
     [event-type event-data]
+ ;; [event-type {{bot :bot} :author :keys [channel-id content]}]
     (if (= (:content event-data) "!disconnect")
       (async/put! (:connection @state) [:disconnect])
       (when-not (:author (:bot event-data))
@@ -32,17 +37,62 @@
             (when-let [reply-text (reply/generate event-data)]
               (msgs/create-message! (:messaging @state) channel-id :content reply-text)))))))
 
+(defn has-permissions? [user-id channel-id permissions]
+  (async/go
+    (let [{:keys [guild-id] :as channel} (async/<! (msgs/get-channel! (:messaging @state) channel-id))
+          member (async/<! (msgs/get-guild-member! (:messaging @state) guild-id user-id))
+          guild (-> (async/<! (msgs/get-guild! (:messaging @state) guild-id))
+                    (assoc :channels [(update channel :permission-overwrites
+                                              (fn [overrides]
+                                                (mapv #(-> % (update :allow parse-if-str)
+                                                           (update :deny parse-if-str))
+                                                      overrides)))])
+                    (assoc :members [member])
+                    (update :roles (fn [roles] (mapv #(update % :permissions parse-if-str) roles)))
+                    (prepare-guild))
+          ]
+      (perm/has-permissions?
+       permissions
+       guild user-id channel-id))))
+
+;; FIXME TODO fork discljord and implement slash commands (https://discord.com/developers/docs/interactions/slash-commands#authorizing-your-application)
+(defn process-command
+  [{:keys [channel-id content author guild-id member]}]
+  (let [words (->   content
+                    str/trim
+                    (str/split #"\s"))
+        [command & args] words
+        guild (msgs/get-guild! (:messaging @state) guild-id)]
+    (async/go (if (async/<! (has-permissions? (:id author) channel-id #{:administrator}))
+       (case command
+         "!stop-polling" (swap! mode assoc :mode 'chilling)
+         "!start-polling" (swap! mode assoc :mode 'polling)
+         "!mod_f" (if (not-empty args)
+                    (let [finded (set (flatten (map #(->> %
+                                                          str/trim
+                                                          (trig/find-word channel-id)) args)))
+                          reply (str/join "\n" finded)]
+                      (println (str "finded: " finded))
+                      (println (str "reply: " reply))
+                      (if (str/blank? (str/trim reply))
+                        (msgs/create-message! (:messaging @state) channel-id :content "Nothing found!")
+                        (msgs/create-message! (:messaging @state) channel-id :content reply)))
+                    (msgs/create-message! (:messaging @state) channel-id :content (format "%s You haven't supplied any words to find!" (fmt/mention-user author))))
+         "!mod_d" (if (not-empty args)
+                    (doall (map #(->> %
+                                      str/trim
+                                      (trig/remove-word channel-id)) args))
+                    (msgs/create-message! (:messaging @state) channel-id :content (format "%s You haven't supplied any words for deletion!" (fmt/mention-user author)))))
+       (msgs/create-message! (:messaging @state) channel-id :content (format "%s You're not an administrator!" (fmt/mention-user author)))))))
+
 (defn learn-message
   "Handler just to learn on user's messages."
-  [event-type event-data]
-  (log/info (format "[Chat %s] message length %s" (:channel-id event-data) (count (:content event-data))))
-  (when (= (:content event-data) "!stop-polling")
-    (swap! mode assoc :mode 'chilling))
-  (when (= (:content event-data) "!start-polling")
-    (swap! mode assoc :mode 'polling))
-  (when (= (:mode @mode) 'polling)
-    (when-not (:bot event-data)
-      (let [channel-id (:channel-id event-data)]
+  [event-type {{bot :bot} :author :keys [channel-id content author guild-id] :as event-data}]
+  (log/info (format "[Chat %s] message length %s" channel-id (count content)))
+  (when-not bot
+    (if (message/is-command? event-data)
+      (process-command event-data)
+      (when (= (:mode @mode) 'polling)
         (dlearner/learn event-data)))))
 
 (def handlers
