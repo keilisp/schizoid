@@ -27,7 +27,7 @@
             "with"
             "garbage"
             "bla-bla-bla"]
-           (extract-words "test message with menitons: <@!593186395246428161> , threads: <#839645600798343192> , emotes: :FeelsGayMan: , slash commands: /test /qwer , links: https://www.fsf.org/ , emails: blabla@test.com , words with garbage: bl#$a)-bl!.a-bl^a")))))
+           (extract-words "test message with menitons: <@!593186395246428161> , threads: <#839645600798343192> , emotes: <:FeelsGayMan:01010110011> , slash commands: /test /qwer , links: https://www.fsf.org/ , emails: blabla@test.com , words with garbage: bl#$a)-bl!.a-bl^a")))))
 
 (deftest append-stop-words-test
   (testing "append-stop-words"
