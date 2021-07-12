@@ -4,7 +4,7 @@
        :default-chance 5}
 
  :grammar {:chain-len 2
-           :separator \$
+           :separator "$"
            :stop-word "0"
            :max-words 30
            :max-messages 5

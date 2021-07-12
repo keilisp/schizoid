@@ -76,13 +76,15 @@
   "Check if message is not empty."
   [message]
   (let [text (:content message)]
-    (and (some? text) (not (str/blank? text)))))
+    (and (some? text)
+         (not (str/blank? text)))))
 
 (defn is-sticker?
   "Сheck if message is sticker. TODO: implement stickers interaction."
   [message]
   (let [stickers (:sticker_itmes message)]
-    (and (some? stickers) (not (empty? stickers)))))
+    (and (some? stickers)
+         (not (empty? stickers)))))
 
 (defn was-edited?
   "Check if message was edited."
@@ -122,7 +124,10 @@
 (defn is-random-answer?
   "Check if replay chance for this channel is high enough."
   [message]
-  (< (rand-int 100) (chance/get-chance (:channel-id message))))
+  (< (rand-int 100)
+     (-> message
+         :channel-id
+         chance/get-chance)))
 
 (defn should-answer?
   "Check if bot should answer to this message."

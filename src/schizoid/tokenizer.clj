@@ -41,7 +41,7 @@
         last-char (if-not (some #(= (last word) %) endsen)
                     ""
                     (last lowercased))
-        prettified (->> lowercased
+        prettified (-> lowercased
                         (remove garbage)
                         str/join)]
     (if (and (seq prettified)

@@ -6,14 +6,12 @@
 
 ;; TODO:
 ;; 1. extracs source and counter patterns to local variables
-;; 2. do something about separtor -> regex
 
-;; (def server-connection {:pool {}
-;;                         :spec {:host "localhost"
-;;                                :port 6379
-;;                                :timeout 4000}})
+(def config (-> "config.edn" slurp edn/read-string))
 
-(def server-connection (-> "config.edn" slurp edn/read-string :redis))
+(def server-connection (-> config :redis))
+(def separator (-> config :grammar separator))
+(def re-separator (re-pattern (str "\\" separator)))
 
 (defmacro wcar* [& body] `(car/wcar server-connection ~@body))
 
@@ -23,7 +21,7 @@
   (let [counter-key (format "trigrams:count:%s" channel-id)
         new-trigs-count (->>  trigrams
                               (map (fn [trigram]
-                                     (let [pair (str/join "$" (butlast trigram))
+                                     (let [pair (str/join separator (butlast trigram))
                                            key (format "trigrams:%s:%s" channel-id pair)]
                                        (wcar* (car/exists key)))))
                               (filter zero?)
@@ -80,17 +78,17 @@
   [channel-id similar-word max-results]
   (let [format-pattern (format "trigrams:%s:" channel-id)
         search-pattern (format "trigrams:%s:*%s*" channel-id similar-word)
-        [_ records] (wcar* (car/scan 0 :match search-pattern :count max-results))
-        separator #"\$"]
+        [_ records] (wcar* (car/scan 0 :match search-pattern :count max-results))]
     (take 10 (vec (flatten (map (fn [record]
-                                  (let [pair (str/split (str/replace record format-pattern "") separator)]
+                                  (let [pair (str/split (str/replace record format-pattern "")
+                                                        re-separator)]
                                     (filter #(str/starts-with? % similar-word) pair))) records))))))
 
 (defn remove-word
   "Remove words with exact match to given `exact-word` for `channel-id`"
   [channel-id exact-word]
-  (let [first-key (format "trigrams:%s:%s%s*" channel-id exact-word "$")
-        second-key (format "trigrams:%s:*%s%s" channel-id "$" exact-word)]
+  (let [first-key (format "trigrams:%s:%s%s*" channel-id exact-word separator)
+        second-key (format "trigrams:%s:*%s%s" channel-id separator exact-word)]
     (remove-keys first-key)
     (remove-keys second-key)))
 

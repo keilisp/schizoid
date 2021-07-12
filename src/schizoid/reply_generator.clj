@@ -5,9 +5,13 @@
             [clojure.tools.logging :as log]
             [clojure.edn :as edn]))
 
-(def stop-word (-> "config.edn" slurp edn/read-string :grammar :stop-word))
-(def endsen (-> "config.edn" slurp edn/read-string :grammar :endsen))
-(def max-messages (-> "config.edn" slurp edn/read-string :grammar :max-messages))
+(def config (-> "config.edn" slurp edn/read-string))
+
+(def stop-word (-> config :grammar :stop-word))
+(def endsen (-> config :grammar :endsen))
+(def max-messages (-> config :grammar :max-messages))
+(def separator (-> config :grammar :separator))
+(def re-separator (re-pattern (str "\\" separator)))
 
 ;; TODO FIXME HACK looks like an abomination to me (maybe use transients for `gen-words`)
 (defn generate-sentence
@@ -30,17 +34,18 @@
   "
   [channel-id pair]
   (let [init-words (loop [i 0
-                          key (str/join "$" pair)
+                          key (str/join separator pair)
                           gen-words {:words []}]
-                     (let [words (str/split key #"\$")
+                     (let [words (str/split key re-separator)
                            next-word (trig/get-random-reply channel-id key 0)]
                        (if (and (< i 50) (some? next-word))
                          (recur (inc i)
-                                (str/join "$" (conj [] (nth words 1) next-word))
+                                (str/join separator (conj [] (nth words 1) next-word))
                                 (assoc gen-words :words (conj (:words gen-words) (nth words 1)) :key key))
                          (assoc gen-words :key key))))
 
-        last-word (last (str/split (:key init-words) #"\$"))]
+        last-word (last (str/split (:key init-words) re-separator))]
+
     (let [words (set (if (not (contains? (init-words :words) last-word))
                        (conj (:words init-words) last-word)
                        (:words init-words)))

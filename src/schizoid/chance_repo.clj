@@ -4,13 +4,12 @@
             [clojure.edn :as edn]
             [taoensso.carmine :as car :refer (wcar)]))
 
-(def server-connection {:pool {}
-                        :spec {:host "localhost"
-                               :port 6379
-                               :timeout 4000}})
+(def config (-> "config.edn" slurp edn/read-string))
+
+(def server-connection (-> config :redis))
 (defmacro wcar* [& body] `(car/wcar server-connection ~@body))
 
-(def default-chance (-> "config.edn" slurp edn/read-string :bot :default-chance))
+(def default-chance (-> config :bot :default-chance))
 
 ;; Execution error (NumberFormatException) at java.lang.Integer/parseInt (Integer.java:614).
 
