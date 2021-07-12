@@ -30,8 +30,7 @@
         cycle, this means that this pair has no relations in the base
      4.2. If a word is found, for example, 'clown', then we form a
         new key from a pair, for example, there will be a bot$clown
-        (key will ALWAYS consist of 2 words) and repeat
-  "
+        (key will ALWAYS consist of 2 words) and repeat "
   [channel-id pair]
   (let [init-words (loop [i 0
                           key (str/join separator pair)
