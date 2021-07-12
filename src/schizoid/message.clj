@@ -70,64 +70,58 @@
 ;;  :edited-timestamp nil
 
 ;;;; TODO FIXME pass necessary args from event-data directly 
+;;;; TODO FIXME consider adding if statements and return `false`
 
 
 (defn has-text?
   "Check if message is not empty."
-  [message]
-  (let [text (:content message)]
-    (and (some? text)
-         (not (str/blank? text)))))
+  [{:keys [content]}]
+  (and (some? content)
+       (not (str/blank? content))))
 
-(defn is-sticker?
-  "Сheck if message is sticker. TODO: implement stickers interaction."
-  [message]
-  (let [stickers (:sticker_itmes message)]
-    (and (some? stickers)
-         (not (empty? stickers)))))
+(defn is-command?
+  "Check if message is command for bot."
+  [{:keys [content]}]
+  (re-matches #"!\w+.*$" content))
 
 (defn was-edited?
   "Check if message was edited."
-  [message]
-  (some? (:edited-timestamp message)))
+  [{:keys [edited-timestamp]}]
+  (some? edited-timestamp))
 
 (defn has-mentions?
   "Check if message mentions other users or bots."
-  [message]
-  (not (empty? (:mentions message))))
+  [{:keys [mentions]}]
+  (not (empty? mentions)))
 
 (defn has-attachments?
   "Check if message has attachments (photos, vides, etc..)"
-  [message]
-  (not (empty? (:attachments message))))
+  [{:keys [attachments]}]
+  (not (empty? attachments)))
 
 (defn has-anchors?
   "Check if message mentions Bot."
-  [message]
-  (let [text (:content message)
-        words-vec (str/split (str/trim text) #" ")
-        mentions (map #(:username %) (:mentions message))]
-    (or (some #{"Sсhizoid"} mentions)
+  [{:keys [content mentions]}]
+  (let [words-vec (str/split (str/trim content) #" ")
+        mentions (map #(:username %) mentions)]
+    (or (some #{"Schizoid"} mentions)
         (->> anchors
-             (map #(str/includes? text %))
+             (map #(str/includes? content %))
              (some #{true})))))
 
 ;; TEST
 (defn is-reply-to-bot?
   "Check if message has reference to Bot's message."
-  [message]
-  (let [referenced-message (:referenced-message message)]
-    (and (some? referenced-message)
-         (= "Schizoid" (:username (:author referenced-message))))))
+  [{:keys [referenced-message]}]
+  (and (some? referenced-message)
+        (= "Schizoid" (:username (:author referenced-message)))))
 
 ;; FIXME
 (defn is-random-answer?
   "Check if replay chance for this channel is high enough."
-  [message]
+  [{:keys [channel-id]}]
   (< (rand-int 100)
-     (-> message
-         :channel-id
-         chance/get-chance)))
+     (chance/get-chance channel-id)))
 
 (defn should-answer?
   "Check if bot should answer to this message."
