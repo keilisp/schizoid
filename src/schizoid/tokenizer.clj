@@ -1,6 +1,7 @@
 (ns schizoid.tokenizer
   (:require [clojure.string :as str]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [discljord.formatting :as fmt]))
 
 (def config (-> "config.edn" slurp edn/read-string))
 
@@ -41,7 +42,7 @@
         last-char (if-not (some #(= (last word) %) endsen)
                     ""
                     (last lowercased))
-        prettified (-> lowercased
+        prettified (->> lowercased
                         (remove garbage)
                         str/join)]
     (if (and (seq prettified)
@@ -59,15 +60,16 @@
 
         email-pattern #"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
 
-        user-mention-pattern #"<@!\d+>"
-        channel-mention-pattern #"<#\d+>"
+        user-mention-pattern fmt/user-mention
+        channel-mention-pattern fmt/channel-mention
         ;; FIXME probably would be cool not to trim emotes and store pairs with them
-        emotes-pattern #":\S+:"
+        emotes-mention-pattern fmt/emoji-mention
+        role-mention-pattern fmt/role-mention
         slash-commands-pattern #"/\S+"
 
         words-without-entities (filter #(not (or (re-matches user-mention-pattern %)
                                                  (re-matches channel-mention-pattern %)
-                                                 (re-matches emotes-pattern %)
+                                                 (re-matches emotes-mention-pattern %)
                                                  (re-matches slash-commands-pattern %)
                                                  (re-matches email-pattern %)
                                                  (re-matches url-pattern %))) words)]
