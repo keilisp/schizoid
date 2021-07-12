@@ -11,7 +11,6 @@
 (def endsen (-> config :grammar :endsen))
 (def garbage (-> config :grammar :garbage))
 
-
 (defn append-stop-words
   "Append `stop-word` to the `words` after the end of the sentence."
   [words]

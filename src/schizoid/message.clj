@@ -114,7 +114,7 @@
   "Check if message has reference to Bot's message."
   [{:keys [referenced-message]}]
   (and (some? referenced-message)
-        (= "Schizoid" (:username (:author referenced-message)))))
+       (= "Schizoid" (:username (:author referenced-message)))))
 
 ;; FIXME
 (defn is-random-answer?
