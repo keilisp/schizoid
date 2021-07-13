@@ -55,7 +55,7 @@
      guild user-id channel-id)))
 
 ;; FIXME TODO fork discljord and implement slash commands (https://discord.com/developers/docs/interactions/slash-commands#authorizing-your-application)
-(defn process-command
+(defn handle-bot-command
   [{:keys [channel-id content author guild-id member]}]
   (let [words (->   content
                     str/trim
@@ -81,16 +81,41 @@
                    (doall (map #(->> %
                                      str/trim
                                      (trig/remove-word channel-id)) args))
-                   (msgs/create-message! (:messaging @state) channel-id :content (format "%s You haven't supplied any words for deletion!" (fmt/mention-user author)))))
-      (msgs/create-message! (:messaging @state) channel-id :content (format "%s You're not an administrator!" (fmt/mention-user author))))))
+                   (msgs/create-message! (:messaging @state) channel-id
+                                         :content (format "%s You haven't supplied any words for deletion!" (fmt/mention-user author)))))
+      (msgs/create-message! (:messaging @state) channel-id
+                            :content (format "%s You're not an administrator!" (fmt/mention-user author))))))
+
+(defn learn-and-try-to-answer
+  "Handler just to learn on user's messages."
+  [event-type {{bot :bot} :author :keys [channel-id content author guild-id id] :as event-data}]
+  (log/info (format "[Chat %s] message length %s" channel-id (count content)))
+  (when-not bot
+    (when (message/contains-tiktok-url? content)
+      (msgs/delete-message! (:messaging @state) channel-id id)
+      (msgs/create-message! (:messaging @state) channel-id
+                            :content (format "%s Пошел нахуй со своим тиктоком" (fmt/mention-user author))))
+    (if (message/is-command? event-data)
+      (handle-bot-command event-data)
+      (let [should-answer? (message/should-answer? event-data)
+            channel-id (:channel-id event-data)]
+        (when should-answer? (msgs/trigger-typing-indicator! (:messaging @state) channel-id))
+        (dlearner/learn event-data)
+        (when should-answer?
+          (when-let [reply-text (reply/generate event-data)]
+            (msgs/create-message! (:messaging @state) channel-id :content reply-text)))))))
 
 (defn learn-message
   "Handler just to learn on user's messages."
-  [event-type {{bot :bot} :author :keys [channel-id content author guild-id] :as event-data}]
+  [event-type {{bot :bot} :author :keys [channel-id content author guild-id id] :as event-data}]
   (log/info (format "[Chat %s] message length %s" channel-id (count content)))
   (when-not bot
+    (when (message/contains-tiktok-url? content)
+      (msgs/delete-message! (:messaging @state) channel-id id)
+      (msgs/create-message! (:messaging @state) channel-id
+                            :content (format "%s Пошел нахуй со своим тиктоком" (fmt/mention-user author))))
     (if (message/is-command? event-data)
-      (process-command event-data)
+      (handle-bot-command event-data)
       (when (= (:mode @mode) 'polling)
         (dlearner/learn event-data)))))
 
