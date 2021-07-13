@@ -9,7 +9,7 @@
            :max-words 30
            :max-messages 5
            :endsen #{\. \! \?}
-           :garbage #{\« \< \{ \( \[ \. \! \? \\ \— \] \/ \& \newline \tab \^ \# \$ \| \* \  \№ \; \: \) \} \> \»}}
+           :garbage #{\« \< \{ \( \[ \. \! \? \\ \- \— \] \/ \& \newline \tab \^ \# \$ \| \* \  \№ \; \: \) \} \> \»}}
 
  :redis {:pool {}
          :spec {:host "localhost"

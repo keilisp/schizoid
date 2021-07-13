@@ -106,7 +106,7 @@
         mentions (map #(:username %) mentions)]
     (or (some #{"Schizoid"} mentions)
         (->> anchors
-             (map #(str/includes? content %))
+             (map #(str/includes? (str/lower-case content) %))
              (some #{true})))))
 
 ;; TEST
