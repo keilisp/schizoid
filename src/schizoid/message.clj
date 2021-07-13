@@ -99,6 +99,12 @@
   [{:keys [attachments]}]
   (not (empty? attachments)))
 
+(defn contains-tiktok-url?
+  "Check if message contains tiktok url."
+  [content]
+  (let [tiktok-pattern #".*tiktok\.com.*"]
+    (re-matches tiktok-pattern content)))
+
 (defn has-anchors?
   "Check if message mentions Bot."
   [{:keys [content mentions]}]
