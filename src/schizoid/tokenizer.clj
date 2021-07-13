@@ -47,7 +47,11 @@
     (if (and (seq prettified)
              (> (count prettified) 2))
       (str prettified last-char)
-      nil)))
+      (if (contains? garbage (-> lowercased
+                                 seq
+                                 first))
+        nil
+        lowercased))))
 
 (defn extract-words
   "Extract words from `message`, delete garbage-entities and `prettify`."
