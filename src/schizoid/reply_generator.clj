@@ -39,8 +39,8 @@
                            next-word (trig/get-random-reply channel-id key 0)]
                        (if (and (< i 50) (some? next-word))
                          (recur (inc i)
-                                (str/join separator (conj [] (nth words 1) next-word))
-                                (assoc gen-words :words (conj (:words gen-words) (nth words 1)) :key key))
+                                (str/join separator (conj [] (second words) next-word))
+                                (assoc gen-words :words (conj (:words gen-words) (second words)) :key key))
                          (assoc gen-words :key key))))
 
         last-word (last (str/split (:key init-words) re-separator))]
